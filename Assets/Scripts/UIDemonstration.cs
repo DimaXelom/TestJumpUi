@@ -15,5 +15,4 @@ public class UIDemonstration : MonoBehaviour
     {
         _jumpable.Jump();
     }
-
 }
