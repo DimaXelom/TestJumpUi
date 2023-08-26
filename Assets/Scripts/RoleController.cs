@@ -15,6 +15,14 @@ public enum PLAYER_HIT
     dynamicHit
 }
 
+public enum PLAYER_MOVE
+{
+    slowSpeed,
+    normalSpeed,
+    fastSpeed,
+}
+
+
 public class RoleController : MonoBehaviour
 {
     public static RoleController thisScript;
@@ -37,22 +45,11 @@ public class RoleController : MonoBehaviour
         EventMove?.Invoke(_currentPlayerState);
     }
 
-    private void Update()
-    {
-        if (_currentPlayerState == PLAYER_STATE.Move)
-        {
-            HandleMovement();
-        }
-        else if (_currentPlayerState == PLAYER_STATE.Hit)
-        {
-            HandleHit();
-        }
-
-        HandleLookAtTarget();
-    }
-
     private void HandleMovement()
     {
+        if (_currentPlayerState != PLAYER_STATE.Move)
+            return;
+
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
         float moveSpeed = 5f;
@@ -62,17 +59,30 @@ public class RoleController : MonoBehaviour
 
     private void HandleHit()
     {
+        if (_currentPlayerState != PLAYER_STATE.Hit)
+            return;
+
         if (Input.GetKeyDown(KeyCode.Space))
         {
             HitBall(PLAYER_HIT.dynamicHit);
         }
     }
 
+
     private void HandleLookAtTarget()
     {
-        gameObject.transform.LookAt(target.transform);
+        if (target != null)
+        {
+            gameObject.transform.LookAt(target.transform);
+        }
     }
 
+    private void Update()
+    {
+        HandleMovement();
+        HandleHit();
+        HandleLookAtTarget();
+    }
 
     internal void HitBall(PLAYER_HIT hitState)
     {
@@ -88,6 +98,25 @@ public class RoleController : MonoBehaviour
                 animator.Play("static");
                 break;
 
+            default:
+                break;
+        }
+    }
+
+
+    internal void SpeedBall(PLAYER_MOVE moveState)
+    {
+        switch (moveState)
+        {
+            case PLAYER_MOVE.slowSpeed:
+                animator.Play("slow");
+                break;
+            case PLAYER_MOVE.normalSpeed:
+                animator.Play("normal");
+                break;
+            case PLAYER_MOVE.fastSpeed:
+                animator.Play("fast");
+                break;
             default:
                 break;
         }
