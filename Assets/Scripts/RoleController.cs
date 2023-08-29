@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public enum PLAYER_STATE
 {
@@ -23,7 +25,7 @@ public enum PLAYER_MOVE
 }
 
 
-public class RoleController : MonoBehaviour
+public class RoleController : MonoBehaviour, IInjectReceiver<ISpeedReference>
 {
     public static RoleController thisScript;
     public event Action<PLAYER_STATE> EventMove;
@@ -32,6 +34,7 @@ public class RoleController : MonoBehaviour
     private PLAYER_STATE _currentPlayerState = PLAYER_STATE.Move;
 
     public int inputCount;
+    private ISpeedReference _speedReference;
 
     private void Awake()
     {
@@ -104,21 +107,105 @@ public class RoleController : MonoBehaviour
     }
 
 
-    internal void SpeedBall(PLAYER_MOVE moveState)
+    public class SpeedReference : MonoBehaviour, ISpeedReference
     {
-        switch (moveState)
+        public Animator animator;
+        private float _speedCounter = 1f;
+
+        public void Speed(PLAYER_MOVE moveState)
         {
-            case PLAYER_MOVE.slowSpeed:
-                animator.Play("slow");
-                break;
-            case PLAYER_MOVE.normalSpeed:
-                animator.Play("normal");
-                break;
-            case PLAYER_MOVE.fastSpeed:
-                animator.Play("fast");
-                break;
-            default:
-                break;
+            switch (moveState)
+            {
+                case PLAYER_MOVE.slowSpeed:
+                    _speedCounter = 1;
+
+                    break;
+                case PLAYER_MOVE.normalSpeed:
+                    _speedCounter = 2;
+
+                    break;
+                case PLAYER_MOVE.fastSpeed:
+                    _speedCounter = 3;
+
+                    break;
+                default:
+                    break;
+            }
+
+            switch (_speedCounter)
+            {
+                case 1:
+                    animator.Play("slow");
+                    break;
+                case 2:
+                    animator.Play("normal");
+                    break;
+                case 3:
+                    animator.Play("fast");
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+
+    public void Inject(ISpeedReference reference)
+    {
+        _speedReference = reference;
+    }
+
+    internal void Speed(PLAYER_MOVE moveState)
+    {
+        _speedReference.Speed(moveState);
+    }
+}
+
+public interface IInjectReceiver
+{
+}
+
+public interface IInjectReceiver<in T> : IInjectReceiver
+{
+    void Inject(T reference);
+}
+
+public interface ISpeedReference
+{
+    void Speed(PLAYER_MOVE moveState);
+}
+
+public static class InjectExtensions
+{
+    public static T InjectReference<T>(this IInjectReceiver<T> receiver) where T : Object, ISpeedReference
+    {
+        if (ReferenceDistibutor.TryGetReference(out T reference))
+        {
+            receiver.Inject(reference);
+        }
+        else
+        {
+            Debug.LogException(new NullReferenceException($"{typeof(T).Name} missing in scene"));
+        }
+
+        return reference;
+    }
+}
+
+public class ReferenceDistibutor : MonoBehaviour
+{
+    public static bool TryGetReference<T>(out T distributingReference) where T : Object, ISpeedReference
+    {
+        distributingReference = FindObjectOfType<T>();
+
+        if (distributingReference != null)
+        {
+            return true;
+        }
+        else
+        {
+            Debug.LogError($"{typeof(T).Name} missing in scene");
+            return false;
         }
     }
 }
