@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class SpringArm : MonoBehaviour
 {
-    
+
     [SerializeField] private float _targetLength = 3.0f;
     [SerializeField] private float _speedDump = 0.0f;
     [SerializeField] private Transform _collisionSocket;
@@ -12,7 +12,7 @@ public class SpringArm : MonoBehaviour
     [SerializeField] private LayerMask _collisionMask = 0;
     [SerializeField] private Camera _cameraReference;
     [SerializeField] private float _cameraViewPortExtentsMultiplier = 1.0f;
-
+    [SerializeField] private float _tanHalfFOV = 0.0f;
     private Vector3 _socketVelocity;
     private Transform _thisTransform;
     private const float MinRadius = 0.001f;
@@ -20,6 +20,7 @@ public class SpringArm : MonoBehaviour
     private void Awake()
     {
         _thisTransform = transform;
+       
     }
 
     private void LateUpdate()
@@ -56,13 +57,28 @@ public class SpringArm : MonoBehaviour
     private float GetCollisionRadiusForCamera(Camera cameraReference)
     {
         var halfFOV = (cameraReference.fieldOfView / 2.0f) * Mathf.Deg2Rad;
-        var nearClipPlaneHalfHeight =
-            Mathf.Tan(halfFOV) * cameraReference.nearClipPlane * _cameraViewPortExtentsMultiplier;
+        var nearClipPlaneHalfHeight = Mathf.Tan(halfFOV) * cameraReference.nearClipPlane * _cameraViewPortExtentsMultiplier;
         var nearClipPlaneHalfWidth = nearClipPlaneHalfHeight * cameraReference.aspect;
         var buffer = new Vector2(nearClipPlaneHalfWidth, nearClipPlaneHalfHeight).magnitude;
 
         return buffer;
     }
+
+
+    // переделанный метод
+
+
+    private Vector2 GetCollisionRadiiForCamera(Camera cameraReference)
+    {
+
+        float verticalRadius = _tanHalfFOV * cameraReference.nearClipPlane * _cameraViewPortExtentsMultiplier;
+        float horizontalRadius = verticalRadius * cameraReference.aspect;
+
+        return new Vector2(horizontalRadius, verticalRadius);
+
+    }
+
+
 
     private float GetDesiredTargetLength()
     {
